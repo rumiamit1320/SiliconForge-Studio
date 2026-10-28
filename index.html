@@ -6240,8 +6240,18 @@ clean:
         }
       });
 
-      document.getElementById('btnLogoutAuth').addEventListener('click', () => {
+      document.getElementById('btnLogoutAuth').addEventListener('click', async () => {
         currentUser = null;
+        const cloud = window.SiliconForgeCloud;
+        if (cloud) {
+          cloud.demoMode = false;
+          cloud.user = null;
+          if (cloud.auth && cloud.auth.currentUser) {
+            try { await cloud.auth.signOut(); }
+            catch (error) { console.error('Firebase sign-out failed:', error); }
+          }
+          setFirebaseSyncStatus('CLOUD: SIGN IN', false);
+        }
         updateUserAuthNav();
         document.getElementById('authModal').classList.remove('hidden');
         showToast('Signed out — please log in to continue');
