@@ -1,13 +1,13 @@
 # SiliconForge Studio — Firebase setup
 
-The HTML application uses Firebase Authentication (Email/Password) and Cloud Firestore. Browser `localStorage` and JSON backup remain available as a local fallback. The supplied project ID is `substationops-database`, so its Firestore rules may be shared with SubstationOps; merge the SiliconForge rules rather than replacing existing rules.
+The HTML application uses Firebase Authentication (Email/Password) and Cloud Firestore. Browser `localStorage` and JSON backup remain available as a local fallback. SiliconForge Studio uses its dedicated Firebase project: `silicon-forge-studio`. It is separate from the SubstationOps Firebase project.
 
 ## One-time Firebase Console setup
 
-1. Open the Firebase project **substationops-database**.
+1. Open the Firebase project **silicon-forge-studio**.
 2. In **Build → Authentication → Sign-in method**, enable **Email/Password**.
 3. In **Build → Firestore Database**, create a database. Choose the region appropriate for your users.
-4. Open Firestore **Rules** and merge the `users/{userId}` and nested `vault/{documentId}` match blocks from `firestore.rules` into your existing rules. **Do not replace the whole ruleset**, because this Firebase project may also serve SubstationOps. Preserve all existing rules for other applications, then publish the merged rules.
+4. Open Firestore **Rules**, paste the contents of `firestore.rules`, and click **Publish**. This project is dedicated to SiliconForge Studio; if you have already added rules for other services to this new project, merge rather than overwrite them.
 5. In **Authentication → Settings → Authorized domains**, confirm `siliconforge-studio.onrender.com` is listed. Add it if it is missing.
 6. Open https://siliconforge-studio.onrender.com, choose **Create Account**, and register with an email address and password. Demo profiles remain local-only and do not authenticate to Firebase.
 
