@@ -5,6 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SiliconForge Studio — Custom Chip &amp; ISA Design Suite</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script>
+    // Firebase web configuration. Access is controlled by Firebase Authentication and Firestore Security Rules.
+    window.SiliconForgeCloud = { app: null, auth: null, db: null, user: null, demoMode: true, busy: false, authFlowInProgress: false, saveTimer: null };
+    try {
+      const firebaseConfig = {
+        apiKey: "AIzaSyA-mCat1FhfWjPatNf8DVywSXUkGiStOJM",
+        authDomain: "substationops-database.firebaseapp.com",
+        projectId: "substationops-database",
+        storageBucket: "substationops-database.firebasestorage.app",
+        messagingSenderId: "85574649922",
+        appId: "1:85574649922:web:e4fecda021b1d8a533c5db",
+        measurementId: "G-7FZR24YEVY"
+      };
+      window.SiliconForgeCloud.app = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
+      window.SiliconForgeCloud.auth = firebase.auth();
+      window.SiliconForgeCloud.db = firebase.firestore();
+    } catch (firebaseInitError) {
+      window.SiliconForgeCloud.error = firebaseInitError;
+      console.error("SiliconForge Firebase initialization failed:", firebaseInitError);
+    }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -142,6 +166,8 @@
           <p class="text-xs text-slate-400 hidden sm:block">Custom Microarchitecture, Instruction Set (ISA) &amp; Instruction Simulator & RTL Generator</p>
         </div>
       </div>
+
+      <span id="firebaseSyncStatus" class="text-[10px] font-mono px-2 py-1 rounded bg-slate-900 border border-slate-800 text-slate-400" title="Firebase cloud synchronization status">CLOUD: LOCAL</span>
 
       <!-- Main Mode Tabs -->
       <nav class="flex items-center bg-slate-900/90 p-1 rounded-lg border border-slate-800 overflow-x-auto max-w-full" aria-label="Main Navigation">
@@ -2285,8 +2311,8 @@
         </div>
 
         <div>
-          <label for="authInputUsername" class="block text-slate-400 mb-1">Username / Engineer ID</label>
-          <input id="authInputUsername" type="text" value="dr_carver" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-cyan-500">
+          <label for="authInputUsername" class="block text-slate-400 mb-1">Email address (Firebase account)</label>
+          <input id="authInputUsername" type="email" placeholder="engineer@your-organization.com" value="" autocomplete="username" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-cyan-500">
         </div>
 
         <div>
@@ -2773,7 +2799,135 @@ HALT`
         showToast('Local save failed: browser storage may be unavailable or full. Export a JSON backup.', 'error');
       }
       updateDatabaseBadge();
+      if (saved) queueFirebaseVaultSave();
       return saved;
+    }
+
+
+    // Firebase cloud persistence layer. The localStorage vault remains the offline fallback.
+    function setFirebaseSyncStatus(label, connected) {
+      const el = document.getElementById('firebaseSyncStatus');
+      if (!el) return;
+      el.textContent = label;
+      el.className = connected
+        ? 'text-[10px] font-mono px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
+        : 'text-[10px] font-mono px-2 py-1 rounded bg-slate-900 border border-slate-800 text-slate-400';
+    }
+
+    function currentStudioPayload() {
+      try {
+        const raw = localStorage.getItem('siliconforge_studio_v2');
+        return raw ? JSON.parse(raw) : { chipConfig, isaList, asmSource: '' };
+      } catch (e) {
+        return { chipConfig, isaList, asmSource: '' };
+      }
+    }
+
+    function queueFirebaseVaultSave(studioOverride) {
+      const cloud = window.SiliconForgeCloud;
+      if (!cloud || !cloud.db || !cloud.user || cloud.demoMode || cloud.busy) return;
+      clearTimeout(cloud.saveTimer);
+      cloud.saveTimer = setTimeout(async () => {
+        try {
+          const uid = cloud.user.uid;
+          const payload = {
+            database: sfDatabase,
+            studioState: studioOverride || currentStudioPayload(),
+            schemaVersion: 1,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          };
+          await cloud.db.collection('users').doc(uid).collection('vault').doc('main').set(payload, { merge: true });
+          setFirebaseSyncStatus('CLOUD: SYNCED', true);
+        } catch (error) {
+          console.error('Firebase vault sync failed:', error);
+          setFirebaseSyncStatus('CLOUD: ERROR', false);
+          showToast('Cloud sync failed; local copy is retained. Check Firestore rules and quota.', 'error');
+        }
+      }, 700);
+    }
+
+    async function loadFirebaseVault(user, isNewAccount) {
+      const cloud = window.SiliconForgeCloud;
+      if (!cloud || !cloud.db || !user) return;
+      cloud.busy = true;
+      setFirebaseSyncStatus('CLOUD: LOADING…', false);
+      try {
+        const userRef = cloud.db.collection('users').doc(user.uid);
+        const profileSnap = await userRef.get();
+        const profile = profileSnap.exists ? profileSnap.data() : {};
+        currentUser = {
+          id: user.uid,
+          username: user.email || profile.email || 'engineer',
+          name: profile.name || user.displayName || (user.email || 'Engineer').split('@')[0],
+          role: profile.role || 'Hardware Engineer',
+          org: profile.org || 'Custom Silicon Lab',
+          avatarColor: profile.avatarColor || '#38bdf8',
+          joined: profile.joined || new Date().toISOString().slice(0, 10),
+          authProvider: 'firebase'
+        };
+        const vaultRef = userRef.collection('vault').doc('main');
+        const snap = await vaultRef.get();
+        if (snap.exists && !isNewAccount) {
+          const data = snap.data() || {};
+          if (data.database && Array.isArray(data.database.projects) && Array.isArray(data.database.users)) {
+            sfDatabase = data.database;
+            localStorage.setItem('siliconforge_db_vault_v3', JSON.stringify(sfDatabase));
+          }
+          if (data.studioState && data.studioState.chipConfig) {
+            Object.assign(chipConfig, data.studioState.chipConfig);
+            if (Array.isArray(data.studioState.isaList)) isaList = data.studioState.isaList;
+            localStorage.setItem('siliconforge_studio_v2', JSON.stringify(data.studioState));
+            const chipName = document.getElementById('inputChipName');
+            if (chipName) chipName.value = chipConfig.name;
+            const asm = document.getElementById('asmSourceEditor');
+            if (asm && typeof data.studioState.asmSource === 'string') asm.value = data.studioState.asmSource;
+            renderIsaTable();
+            updateArchitectureAndPPA();
+            updateLiveBitEncoder();
+            assembleCurrentCode(false);
+            generateVerilogAndSpec();
+          }
+          renderProjectsCatalog();
+          renderDatabaseTableViewer();
+          updateDatabaseBadge();
+        } else {
+          await vaultRef.set({
+            database: sfDatabase,
+            studioState: currentStudioPayload(),
+            schemaVersion: 1,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+        }
+        cloud.busy = false;
+        setFirebaseSyncStatus('CLOUD: SYNCED', true);
+        updateUserAuthNav();
+      } catch (error) {
+        cloud.busy = false;
+        setFirebaseSyncStatus('CLOUD: ERROR', false);
+        console.error('Firebase vault load failed:', error);
+        throw error;
+      }
+    }
+
+    function initializeFirebaseCloudSync() {
+      const cloud = window.SiliconForgeCloud;
+      if (!cloud || !cloud.auth || !cloud.db) {
+        setFirebaseSyncStatus('CLOUD: OFFLINE', false);
+        return;
+      }
+      setFirebaseSyncStatus('CLOUD: SIGN IN', false);
+      cloud.auth.onAuthStateChanged(async user => {
+        if (!user) {
+          cloud.user = null;
+          if (!cloud.demoMode) setFirebaseSyncStatus('CLOUD: SIGN IN', false);
+          return;
+        }
+        cloud.user = user;
+        if (cloud.authFlowInProgress) return;
+        cloud.demoMode = false;
+        try { await loadFirebaseVault(user, false); }
+        catch (e) { /* local vault remains usable */ }
+      });
     }
 
     function updateDatabaseBadge() {
@@ -3768,6 +3922,7 @@ HALT`
           asmSource: document.getElementById('asmSourceEditor') ? document.getElementById('asmSourceEditor').value : ''
         };
         localStorage.setItem('siliconforge_studio_v2', JSON.stringify(payload));
+        queueFirebaseVaultSave(payload);
       } catch (e) {}
     }
 
@@ -5960,8 +6115,22 @@ clean:
         document.getElementById('authModal').classList.remove('hidden');
       });
 
+      // Demo profiles deliberately stay local and do not write to a Firebase account.
+      async function switchToLocalDemoProfile() {
+        const cloud = window.SiliconForgeCloud;
+        if (cloud) {
+          cloud.demoMode = true;
+          cloud.user = null;
+          if (cloud.auth && cloud.auth.currentUser) {
+            try { await cloud.auth.signOut(); } catch (e) { console.warn('Firebase sign-out failed:', e); }
+          }
+          setFirebaseSyncStatus('CLOUD: DEMO / LOCAL', false);
+        }
+      }
+
       // Quick 1-Click Demo Profiles
       document.getElementById('btnDemoUser1').addEventListener('click', () => {
+        switchToLocalDemoProfile();
         currentUser = sfDatabase.users[0];
         document.getElementById('authInputUsername').value = currentUser.username;
         document.getElementById('authInputPassword').value = 'silicon2026';
@@ -5970,6 +6139,7 @@ clean:
         showToast('Authenticated as Dr. Carver (Senior VLSI Architect)');
       });
       document.getElementById('btnDemoUser2').addEventListener('click', () => {
+        switchToLocalDemoProfile();
         currentUser = sfDatabase.users[1];
         document.getElementById('authInputUsername').value = currentUser.username;
         document.getElementById('authInputPassword').value = 'lovelace1843';
@@ -5978,6 +6148,7 @@ clean:
         showToast('Authenticated as Ada Lovelace (Compiler & ISA Lead)');
       });
       document.getElementById('btnDemoUser3').addEventListener('click', () => {
+        switchToLocalDemoProfile();
         currentUser = sfDatabase.users[2];
         document.getElementById('authInputUsername').value = currentUser.username;
         document.getElementById('authInputPassword').value = 'guest123';
@@ -6003,59 +6174,69 @@ clean:
         document.getElementById('btnSubmitAuth').textContent = 'Register Engineer Account';
       });
 
-      // Submit Auth Form
-      document.getElementById('btnSubmitAuth').addEventListener('click', () => {
-        const u = document.getElementById('authInputUsername').value.trim();
-        const p = document.getElementById('authInputPassword').value.trim();
-        if (!u || !p) {
-          showToast('Please enter both username and password');
+      // Firebase-backed account creation and sign-in. Demo profiles remain local-only.
+      document.getElementById('btnSubmitAuth').addEventListener('click', async () => {
+        const email = document.getElementById('authInputUsername').value.trim().toLowerCase();
+        const password = document.getElementById('authInputPassword').value;
+        const cloud = window.SiliconForgeCloud;
+        if (!email || !password) {
+          showToast('Enter your Firebase account email and password');
           return;
         }
-
-        if (isSignUpMode) {
-          const fn = document.getElementById('authInputFullName').value.trim() || u;
-          const role = document.getElementById('authSelectRole').value;
-          const org = document.getElementById('authInputOrg').value.trim() || 'Custom Silicon Lab';
-          const newUser = {
-            id: 'usr_' + Date.now(),
-            username: u,
-            name: fn,
-            role,
-            org,
-            avatarColor: '#38bdf8',
-            joined: '2026-10-28'
-          };
-          sfDatabase.users.push(newUser);
-          currentUser = newUser;
-          saveDatabaseToStorage();
+        if (!cloud || !cloud.auth || !cloud.db) {
+          showToast('Firebase is unavailable. Check network access and Firebase configuration.', 'error');
+          return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          showToast('Use a valid email address for Firebase sign-in');
+          return;
+        }
+        const submitButton = document.getElementById('btnSubmitAuth');
+        const previousText = submitButton.textContent;
+        submitButton.disabled = true;
+        submitButton.textContent = isSignUpMode ? 'Creating Firebase account…' : 'Signing in…';
+        cloud.authFlowInProgress = true;
+        try {
+          let credential;
+          if (isSignUpMode) {
+            credential = await cloud.auth.createUserWithEmailAndPassword(email, password);
+            const fn = document.getElementById('authInputFullName').value.trim() || email.split('@')[0];
+            const role = document.getElementById('authSelectRole').value;
+            const org = document.getElementById('authInputOrg').value.trim() || 'Custom Silicon Lab';
+            const profile = { email, username: email, name: fn, role, org, avatarColor: '#38bdf8', joined: new Date().toISOString().slice(0, 10), authProvider: 'firebase' };
+            await credential.user.updateProfile({ displayName: fn });
+            await cloud.db.collection('users').doc(credential.user.uid).set(profile, { merge: true });
+            currentUser = { id: credential.user.uid, ...profile };
+            cloud.user = credential.user;
+            cloud.demoMode = false;
+            await loadFirebaseVault(credential.user, true);
+            showToast('Firebase account created. Cloud sync is enabled.');
+          } else {
+            credential = await cloud.auth.signInWithEmailAndPassword(email, password);
+            cloud.user = credential.user;
+            cloud.demoMode = false;
+            await loadFirebaseVault(credential.user, false);
+            showToast('Signed in. SiliconForge cloud data is synchronized.');
+          }
           updateUserAuthNav();
           document.getElementById('authModal').classList.add('hidden');
-          showToast(`Account registered for ${fn} (${role})`);
-        } else {
-          const found = sfDatabase.users.find(x => x.username.toLowerCase() === u.toLowerCase());
-          if (found) {
-            currentUser = found;
-            updateUserAuthNav();
-            document.getElementById('authModal').classList.add('hidden');
-            showToast(`Welcome back, ${found.name}`);
-          } else {
-            // Auto-create or authenticate as new engineer
-            const newUser = {
-              id: 'usr_' + Date.now(),
-              username: u,
-              name: u.toUpperCase(),
-              role: 'Hardware Engineer',
-              org: 'SiliconForge User',
-              avatarColor: '#10b981',
-              joined: '2026-10-28'
-            };
-            sfDatabase.users.push(newUser);
-            currentUser = newUser;
-            saveDatabaseToStorage();
-            updateUserAuthNav();
-            document.getElementById('authModal').classList.add('hidden');
-            showToast(`Authenticated as ${newUser.name}`);
-          }
+        } catch (error) {
+          console.error('Firebase authentication failed:', error);
+          const messages = {
+            'auth/email-already-in-use': 'This email already has an account. Select Sign In.',
+            'auth/invalid-email': 'Enter a valid email address.',
+            'auth/weak-password': 'Choose a password with at least 6 characters.',
+            'auth/invalid-credential': 'Email or password is incorrect.',
+            'auth/user-not-found': 'No Firebase account exists for this email. Select Create Account.',
+            'auth/wrong-password': 'Email or password is incorrect.',
+            'auth/network-request-failed': 'Network error. Check your connection and try again.',
+            'permission-denied': 'Firestore denied access. Publish the supplied Firestore security rules.'
+          };
+          showToast(messages[error.code] || ('Firebase sign-in failed: ' + (error.message || error.code)), 'error');
+        } finally {
+          cloud.authFlowInProgress = false;
+          submitButton.disabled = false;
+          submitButton.textContent = previousText;
         }
       });
 
@@ -6942,6 +7123,7 @@ clean:
 
       // Load Database & User Session
       loadDatabaseFromStorage();
+      initializeFirebaseCloudSync();
       updateUserAuthNav();
       window.createDesignSnapshot('Initial Factory Baseline');
 
