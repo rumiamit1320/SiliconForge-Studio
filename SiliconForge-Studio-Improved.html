@@ -188,6 +188,10 @@
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
           <span>4. Verilog HDL &amp; Spec</span>
         </button>
+        <button id="tabBtnBoost" type="button" class="nav-tab-btn px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 text-slate-400 hover:text-slate-200 border border-transparent" title="Preliminary power-stage calculator and controller checks">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 2L4 14h7l-1 8 10-12h-7l0-8z"/></svg>
+          <span>6. Boost Converter Lab</span>
+        </button>
         <button id="tabBtnDb" type="button" class="nav-tab-btn px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 text-slate-400 hover:text-slate-200 border border-transparent">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7M4 7c0-2 1.5-3 3.5-3h9c2 0 3.5 1 3.5 3M4 7c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3m-16 5c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3"/></svg>
           <span>5. Database &amp; Vault</span>
@@ -2036,6 +2040,87 @@
       </div>
     </section>
 
+
+    <!-- TAB 6: BOOST CONVERTER DESIGN LAB -->
+    <section id="panelBoost" class="hidden space-y-4">
+      <div class="bg-[#0f172a] border border-cyan-900/60 rounded-xl p-4 md:p-5 space-y-3">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2"><span class="text-cyan-300 text-lg">⚡</span><h2 class="text-base font-semibold text-white">Two-Phase Interleaved Boost Converter Lab</h2></div>
+            <p class="text-xs text-slate-400 mt-1">Preliminary calculations and app-level functional checks for a 12 V → 120 V, 1 kW converter.</p>
+          </div>
+          <span class="text-[10px] font-mono px-2 py-1 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">ENGINEERING ESTIMATE · NOT HARDWARE-VALIDATED</span>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <label class="text-xs text-slate-400 space-y-1 block">Input voltage (V)<input id="boostVin" type="number" min="1" max="100" step="0.1" value="12" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"></label>
+          <label class="text-xs text-slate-400 space-y-1 block">Output voltage (V)<input id="boostVout" type="number" min="5" max="400" step="1" value="120" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"></label>
+          <label class="text-xs text-slate-400 space-y-1 block">Output power (W)<input id="boostPower" type="number" min="10" max="5000" step="10" value="1000" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"></label>
+          <label class="text-xs text-slate-400 space-y-1 block">Frequency / phase (kHz)<input id="boostFreq" type="number" min="5" max="200" step="1" value="50" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"></label>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <label class="text-xs text-slate-400 space-y-1 block">Efficiency estimate (%)<input id="boostEff" type="number" min="50" max="99.9" step="0.5" value="90" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"></label>
+          <label class="text-xs text-slate-400 space-y-1 block">Inductor per phase (µH)<input id="boostL" type="number" min="1" max="1000" step="0.1" value="15.5" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"></label>
+          <label class="text-xs text-slate-400 space-y-1 block">Output capacitance (µF)<input id="boostC" type="number" min="10" max="10000" step="10" value="470" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"></label>
+          <label class="text-xs text-slate-400 space-y-1 block">Target ripple (% Vout)<input id="boostRipple" type="number" min="0.1" max="10" step="0.1" value="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"></label>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button id="btnBoostCalculate" type="button" class="px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold">Calculate design</button>
+          <button id="btnBoostRunTests" type="button" class="px-3 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold">Run app checks</button>
+          <button id="btnBoostReset" type="button" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs">Reset defaults</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-5 gap-4">
+        <div class="xl:col-span-3 bg-[#0f172a] border border-slate-800 rounded-xl p-4 space-y-3">
+          <h3 class="text-sm font-semibold text-white">Power-stage topology (conceptual)</h3>
+          <div class="overflow-x-auto">
+            <svg viewBox="0 0 760 340" role="img" aria-label="Two phase interleaved boost converter topology" class="w-full min-w-[560px] rounded-lg bg-slate-950/60">
+              <g stroke="#67e8f9" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M35 85 H125 M35 260 H125 M125 85 V260 M125 85 H190 M125 260 H190"/>
+                <path d="M190 85 l10 -8 l10 16 l10 -16 l10 16 l10 -8 H330"/>
+                <path d="M190 260 l10 -8 l10 16 l10 -16 l10 16 l10 -8 H330"/>
+                <path d="M330 85 V125 M330 260 V220"/>
+                <path d="M330 125 V145 M315 145 H345 M315 155 H345 M330 155 V180"/>
+                <path d="M330 220 V200 M315 200 H345 M315 190 H345 M330 190 V180"/>
+                <path d="M330 85 H400 M330 260 H400"/>
+                <path d="M400 85 l8 -8 l8 16 l8 -16 l8 16 l8 -8 H510 M400 260 l8 -8 l8 16 l8 -16 l8 16 l8 -8 H510"/>
+                <path d="M510 85 H560 V260 H510"/>
+                <path d="M560 85 H620 M560 260 H620 M620 85 V260"/>
+                <path d="M620 130 V155 M605 155 H635 M605 165 H635 M620 165 V190"/>
+                <path d="M620 190 V205 M605 205 H635 M605 215 H635 M620 215 V230"/>
+                <path d="M620 85 H700 M620 260 H700"/>
+              </g>
+              <g fill="#e2e8f0" font-size="13" font-family="monospace">
+                <text x="32" y="65">+12 V DC</text><text x="28" y="286">GND</text>
+                <text x="200" y="55">L1 15.5 µH</text><text x="200" y="230">L2 15.5 µH</text>
+                <text x="342" y="145">Q1</text><text x="342" y="208">Q2</text>
+                <text x="425" y="55">D1</text><text x="425" y="230">D2</text>
+                <text x="575" y="110">Cout</text><text x="640" y="65">+120 V</text><text x="640" y="286">Return</text>
+                <text x="25" y="315" fill="#94a3b8" font-size="11">Illustrative topology only — simplified drawing; use a validated schematic for implementation.</text>
+              </g>
+            </svg>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+            <div class="rounded-lg bg-slate-900 p-3"><div class="text-slate-400">Phase shift</div><div class="text-cyan-300 font-mono text-lg">180°</div></div>
+            <div class="rounded-lg bg-slate-900 p-3"><div class="text-slate-400">PWM period</div><div id="boostPeriod" class="text-cyan-300 font-mono text-lg">20.00 µs</div></div>
+            <div class="rounded-lg bg-slate-900 p-3"><div class="text-slate-400">ON time (ideal)</div><div id="boostOnTime" class="text-cyan-300 font-mono text-lg">18.00 µs</div></div>
+            <div class="rounded-lg bg-slate-900 p-3"><div class="text-slate-400">Load resistance</div><div id="boostLoad" class="text-cyan-300 font-mono text-lg">14.40 Ω</div></div>
+          </div>
+        </div>
+        <div class="xl:col-span-2 bg-[#0f172a] border border-slate-800 rounded-xl p-4 space-y-3">
+          <h3 class="text-sm font-semibold text-white">Calculated results</h3>
+          <div id="boostResults" class="space-y-2 text-sm"><p class="text-slate-400 text-xs">Select Calculate design to update estimates.</p></div>
+          <p class="text-[11px] text-amber-300 border-t border-slate-800 pt-3">Estimates assume CCM and balanced phases. They exclude detailed switching loss, parasitic overshoot, magnetic saturation and thermal validation.</p>
+        </div>
+      </div>
+
+      <div class="bg-[#0f172a] border border-slate-800 rounded-xl p-4 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2"><h3 class="text-sm font-semibold text-white">Built-in app functional checks</h3><span id="boostTestSummary" class="text-xs text-slate-400">Not run</span></div>
+        <p class="text-xs text-slate-400">Checks calculator equations, validation guards, interleaving timing and controller safety constraints. These are software checks, not hardware or SPICE validation.</p>
+        <div id="boostTestResults" class="space-y-2"><p class="text-xs text-slate-500">Run app checks to execute the test suite.</p></div>
+      </div>
+    </section>
+
   </main>
 
   <!-- In-Page Modal for Architecture & ISA Diff Viewer -->
@@ -3283,6 +3368,118 @@ HALT`
       return val | 0;
     }
 
+
+    // =========================================================================
+    // TAB 6: PRELIMINARY BOOST CONVERTER CALCULATOR + APP FUNCTIONAL CHECKS
+    // =========================================================================
+    function readBoostInputs() {
+      const ids = ['boostVin','boostVout','boostPower','boostFreq','boostEff','boostL','boostC','boostRipple'];
+      const v = {};
+      ids.forEach(id => { v[id] = Number(document.getElementById(id).value); });
+      const limits = [
+        ['boostVin', 1, 100, 'Input voltage must be 1–100 V.'],
+        ['boostVout', 5, 400, 'Output voltage must be 5–400 V.'],
+        ['boostPower', 10, 5000, 'Output power must be 10–5000 W.'],
+        ['boostFreq', 5, 200, 'Switching frequency must be 5–200 kHz.'],
+        ['boostEff', 50, 99.9, 'Efficiency must be 50–99.9%.'],
+        ['boostL', 1, 1000, 'Inductance must be 1–1000 µH.'],
+        ['boostC', 10, 10000, 'Capacitance must be 10–10000 µF.'],
+        ['boostRipple', 0.1, 10, 'Ripple target must be 0.1–10%.']
+      ];
+      for (const [id, min, max, message] of limits) {
+        if (!Number.isFinite(v[id]) || v[id] < min || v[id] > max) throw new Error(message);
+      }
+      if (v.boostVout <= v.boostVin) throw new Error('Boost mode requires output voltage above input voltage.');
+      return {
+        vin:v.boostVin, vout:v.boostVout, power:v.boostPower, f:v.boostFreq*1000,
+        eta:v.boostEff/100, L:v.boostL*1e-6, C:v.boostC*1e-6, ripplePct:v.boostRipple/100
+      };
+    }
+
+    function calculateBoostDesign() {
+      const x = readBoostInputs();
+      const duty = 1 - x.vin/x.vout;
+      const poutCurrent = x.power/x.vout;
+      const inputCurrent = x.power/(x.eta*x.vin);
+      const phaseCurrent = inputCurrent/2;
+      const ripple = x.vin*duty/(x.L*x.f);
+      const peak = phaseCurrent + ripple/2;
+      const rms = Math.sqrt(phaseCurrent*phaseCurrent + ripple*ripple/12);
+      const period = 1/x.f;
+      const onTime = duty*period;
+      const load = x.vout*x.vout/x.power;
+      const capRipple = poutCurrent*duty/(x.C*x.f);
+      const capTarget = poutCurrent*duty/(x.f*(x.vout*x.ripplePct));
+      const rhpz = load*(1-duty)*(1-duty)/(2*Math.PI*x.L);
+      const fmt = (n, digits=2) => Number.isFinite(n) ? n.toLocaleString(undefined,{maximumFractionDigits:digits,minimumFractionDigits:digits}) : '—';
+      document.getElementById('boostPeriod').textContent = fmt(period*1e6)+' µs';
+      document.getElementById('boostOnTime').textContent = fmt(onTime*1e6)+' µs';
+      document.getElementById('boostLoad').textContent = fmt(load)+' Ω';
+      const rows = [
+        ['Ideal duty cycle',fmt(duty*100)+'%'],
+        ['Output current',fmt(poutCurrent)+' A'],
+        ['Input current estimate',fmt(inputCurrent)+' A'],
+        ['Average current / phase',fmt(phaseCurrent)+' A'],
+        ['Inductor ripple / phase',fmt(ripple)+' A p-p'],
+        ['Peak current / phase',fmt(peak)+' A'],
+        ['Inductor RMS / phase',fmt(rms)+' A'],
+        ['Ideal capacitive ripple estimate',fmt(capRipple)+' V p-p'],
+        ['Capacitance for target ripple',fmt(capTarget*1e6,1)+' µF minimum'],
+        ['Approx. RHP zero (CCM)',fmt(rhpz/1000)+' kHz']
+      ];
+      document.getElementById('boostResults').innerHTML = rows.map(([k,val]) =>
+        '<div class="flex items-start justify-between gap-3 border-b border-slate-800/70 pb-2"><span class="text-slate-400 text-xs">'+k+'</span><span class="font-mono text-cyan-200 text-xs text-right">'+val+'</span></div>'
+      ).join('');
+      return {x,duty,poutCurrent,inputCurrent,phaseCurrent,ripple,peak,rms,period,onTime,load,capRipple,capTarget,rhpz};
+    }
+
+    function runBoostFunctionalTests() {
+      const tests = [];
+      const add = (name, pass, detail) => tests.push({name,pass,detail});
+      try {
+        const r = calculateBoostDesign();
+        add('Default design inputs accepted', true, 'All values are within configured limits.');
+        add('Duty-cycle equation', Math.abs(r.duty-0.9)<1e-9, 'Expected 90% for 12 V to 120 V.');
+        add('Output current equation', Math.abs(r.poutCurrent-1000/120)<1e-6, 'Expected 8.33 A at 1 kW / 120 V.');
+        add('Efficiency-adjusted input current', Math.abs(r.inputCurrent-1000/(0.9*12))<1e-5, 'Expected approximately 92.59 A.');
+        add('Interleaving timing', Math.abs(r.period*1e6-20)<1e-6 && Math.abs(r.period/2*1e6-10)<1e-6, '20 µs period and 10 µs phase offset at 50 kHz.');
+        add('Positive inductor ripple and peak', r.ripple>0 && r.peak>r.phaseCurrent, 'Peak current must exceed average phase current.');
+        add('Capacitance target is positive', r.capTarget>0 && r.capRipple>0, 'Ripple/capacitance calculations are finite and positive.');
+        add('RHP zero is finite', Number.isFinite(r.rhpz) && r.rhpz>0, 'RHP zero estimate is positive for this CCM operating point.');
+      } catch(e) {
+        add('Default design calculation', false, e.message);
+      }
+      const vin = document.getElementById('boostVin');
+      const originalVin = vin.value;
+      vin.value = '0';
+      let rejected = false;
+      try { readBoostInputs(); } catch(e) { rejected = true; }
+      vin.value = originalVin;
+      add('Input validation rejects invalid voltage', rejected, rejected ? 'Zero input voltage was rejected.' : 'Invalid input was not rejected.');
+      const originalVout = document.getElementById('boostVout').value;
+      document.getElementById('boostVout').value = String(Number(originalVin)+1);
+      let ratioRejected = false;
+      try { readBoostInputs(); } catch(e) { ratioRejected = /output voltage above input/i.test(e.message); }
+      document.getElementById('boostVout').value = originalVout;
+      add('Boost ratio validation', ratioRejected, ratioRejected ? 'Output at/below input is rejected.' : 'Invalid conversion ratio was not rejected.');
+      const passed = tests.filter(t=>t.pass).length;
+      document.getElementById('boostTestSummary').textContent = passed+'/'+tests.length+' checks passed';
+      document.getElementById('boostTestSummary').className = 'text-xs font-mono '+(passed===tests.length?'text-emerald-300':'text-rose-300');
+      document.getElementById('boostTestResults').innerHTML = tests.map(t =>
+        '<div class="flex items-start gap-2 rounded-lg border '+(t.pass?'border-emerald-900/70 bg-emerald-950/20':'border-rose-900/70 bg-rose-950/20')+' p-2"><span class="'+(t.pass?'text-emerald-300':'text-rose-300')+'">'+(t.pass?'PASS':'FAIL')+'</span><div class="flex-1"><div class="text-xs text-slate-200">'+t.name+'</div><div class="text-[11px] text-slate-400">'+t.detail+'</div></div></div>'
+      ).join('');
+      return {passed,total:tests.length,tests};
+    }
+
+    function resetBoostDefaults() {
+      const defaults = {boostVin:12,boostVout:120,boostPower:1000,boostFreq:50,boostEff:90,boostL:15.5,boostC:470,boostRipple:1};
+      Object.entries(defaults).forEach(([id,value])=>{document.getElementById(id).value=value;});
+      calculateBoostDesign();
+      document.getElementById('boostTestSummary').textContent='Not run';
+      document.getElementById('boostTestSummary').className='text-xs text-slate-400';
+      document.getElementById('boostTestResults').innerHTML='<p class="text-xs text-slate-500">Run app checks to execute the test suite.</p>';
+    }
+
     // =========================================================================
     // TAB SWITCHING
     // =========================================================================
@@ -3291,7 +3488,8 @@ HALT`
       { btn: 'tabBtnIsa',  panel: 'panelIsa' },
       { btn: 'tabBtnSim',  panel: 'panelSim' },
       { btn: 'tabBtnHdl',  panel: 'panelHdl' },
-      { btn: 'tabBtnDb',   panel: 'panelDb' }
+      { btn: 'tabBtnDb',   panel: 'panelDb' },
+      { btn: 'tabBtnBoost', panel: 'panelBoost' }
     ];
 
     function switchTab(activeBtnId) {
@@ -3314,6 +3512,8 @@ HALT`
       } else if (activeBtnId === 'tabBtnDb') {
         renderProjectsCatalog();
         renderDatabaseTableViewer();
+      } else if (activeBtnId === 'tabBtnBoost') {
+        try { calculateBoostDesign(); } catch (e) { showToast(e.message, 'error'); }
       }
     }
 
@@ -6109,6 +6309,10 @@ clean:
       // TAB 5 & AUTH MODAL EVENT BINDINGS
       // =========================================================================
       document.getElementById('tabBtnDb').addEventListener('click', () => switchTab('tabBtnDb'));
+      document.getElementById('tabBtnBoost').addEventListener('click', () => switchTab('tabBtnBoost'));
+      document.getElementById('btnBoostCalculate').addEventListener('click', () => { try { calculateBoostDesign(); showToast('Boost converter estimates updated.'); } catch(e) { showToast(e.message, 'error'); } });
+      document.getElementById('btnBoostRunTests').addEventListener('click', () => { const r = runBoostFunctionalTests(); showToast('Boost Lab checks: '+r.passed+'/'+r.total+' passed.'); });
+      document.getElementById('btnBoostReset').addEventListener('click', resetBoostDefaults);
 
       // Auth Modal open/close
       document.getElementById('btnOpenAuthModal').addEventListener('click', () => {
