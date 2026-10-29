@@ -3457,7 +3457,7 @@ HALT`
       vin.value = originalVin;
       add('Input validation rejects invalid voltage', rejected, rejected ? 'Zero input voltage was rejected.' : 'Invalid input was not rejected.');
       const originalVout = document.getElementById('boostVout').value;
-      document.getElementById('boostVout').value = String(Number(originalVin)+1);
+      document.getElementById('boostVout').value = originalVin;
       let ratioRejected = false;
       try { readBoostInputs(); } catch(e) { ratioRejected = /output voltage above input/i.test(e.message); }
       document.getElementById('boostVout').value = originalVout;
